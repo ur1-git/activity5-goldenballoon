@@ -6,19 +6,14 @@ import javax.swing.table.DefaultTableModel;
 
 public class BalonOroMini extends JFrame {
 
-    // OBJETIVO: mostrar candidatos al Balón de Oro y permitir votar por ellos.
-    // Conserva la ventana y el título de la base mientras completas los pasos.
-
-    // PASO 1: revisa Player.java.
-    // Cada Player guarda nombre, equipo y votos. Sus getters permiten leerlos
-    // y sumarVoto() incrementa sus votos. La lista siguiente guardará los jugadores.
+    // i declare the arraylist where players are, one for row
     private ArrayList<Player> players = new ArrayList<>();
-
-    // PASO 2: atributos de la tabla (ya declarados).
-    // model guardará las filas y table las mostrará en la ventana.
+    // model is the object that stores the row and columns data
     private DefaultTableModel model;
+    // jtable is the visual table the user sees when launching the app, without jtable, you wouldnt be able to see model anyway
     private JTable table;
 
+    // the constructor of this class, as it extends a jframe, it sets its value as if it were a jframe
     public BalonOroMini() {
         setTitle("Balón de Oro - Clasificación de votos");
         setSize(650, 450);
@@ -26,90 +21,122 @@ public class BalonOroMini extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // Título de la base: ocupa la zona NORTH.
+        // this is a label that shows text, we modify its values so it is golden colour and has big letters
         JLabel titulo = new JLabel("BALÓN DE ORO", SwingConstants.CENTER);
         titulo.setFont(new Font("Arial", Font.BOLD, 26));
         titulo.setForeground(new Color(170, 125, 20));
-        titulo.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
-        add(titulo, BorderLayout.NORTH);
+        titulo.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10)); // adds space around the title: top, left, bottom, right
+        add(titulo, BorderLayout.NORTH); // this adds "titulo" to the jframe and places it in the top of the window
 
-        // PASO 3: crea el modelo de la tabla.
-        String[] columns = {"Position", "Player", "Votes"};
-        int votesColumn = 3;
+        String[] columns = {"Posición", "Jugador", "Equipo", "País", "Votos"}; // we make a string array that holds the name of each column
+        int votesColumn = 4; // the votes column is 4, i added this variable so you can change it here instead of hardcoding it through the code
 
+        // we now instantiate the table data model
         model = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int file, int column) {
-                return (column == votesColumn);
+            public boolean isCellEditable(int row, int column) { // we can only edit votes
+                return column == votesColumn;
             }
-            // después de editar una celda deberíamos actualizar la
         };
+        // this runs when the table data changes, we only need changes in votes
         model.addTableModelListener(e -> {
-            if ((e.getType() == TableModelEvent.UPDATE) && (e.getColumn() == 3)) {
+            if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == votesColumn) {
                 int row = e.getFirstRow();
-                int votes = Integer.parseInt(model.getValueAt(row, 3).toString());
-                players.get(row).setVotes(votes);
+                try {
+                    int votes = Integer.parseInt(model.getValueAt(row, votesColumn).toString()); // turns the cell text into an int
+                    if (votes < 0) {
+                        throw new NumberFormatException();
+                    }
+                    players.get(row).setVotes(votes); // updates the player too, not just the table
+                } catch (NumberFormatException ex) {
+                    // if the number is invalid, we show a message and put the old votes back
+                    JOptionPane.showMessageDialog(this, "Introduce un número entero de votos igual o mayor que 0");
+                    model.setValueAt(players.get(row).getVotos(), row, votesColumn);
+                }
             }
         });
 
-        // PASO 4: muestra la tabla en el centro, debajo del título.
-        // creates a table using the information of model
         table = new JTable(model);
-
-        // i think this just adds a scroll bar when needed
-        JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(table); // lets us scroll when there are too many rows
         add(scrollPane, BorderLayout.CENTER);
 
-        // PASO 5: prepara la zona de botones.
-        // a) Crea un JPanel llamado panelBotones con un new FlowLayout().
-        //    FlowLayout coloca los botones uno junto a otro.
-        JPanel buttonsPanel = new JPanel();
+        // two smaller panels inside this one, so the buttons can go on each side
+        JPanel buttonsPanel = new JPanel(new BorderLayout());
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton
-        // b) Crea dos JButton llamados botonAnadir y botonVotar con los textos
-        //    "Añadir jugador" y "Votar", respectivamente.
-        // c) Añade ambos botones al panel usando panelBotones.add(...).
-        // d) Añade el panel con add(..., BorderLayout.SOUTH).
-        // e) Ejecuta BalonOroMini: comprueba que los botones aparecen abajo.
+        JButton addButton = new JButton("Añadir jugador");
+        JButton sortButton = new JButton("Ordenar votos");
+        JButton deleteButton = new JButton("Eliminar jugador");
 
-        // PASO 6: conecta el botón de añadir.
-        // a) Usa botonAnadir.addActionListener(e -> { ... });
-        //    Dentro de las llaves escribe las acciones de los apartados siguientes.
-        // b) Pide nombre y equipo con JOptionPane.showInputDialog(this, "...").
-        // c) Si alguna respuesta es null (Cancelar) o está vacía, sal con return.
-        //    Comprueba primero null, antes de llamar a isBlank().
-        // d) Crea un Player con esos datos y añádelo a players usando add().
-        // e) Añade una fila con model.addRow(new Object[] { ... }).
-        //    Dentro del array coloca nombre, equipo y votos usando los getters.
-        // f) Ejecuta BalonOroMini y añade dos jugadores para comprobar el resultado.
+        leftPanel.add(addButton);
+        leftPanel.add(sortButton);
+        rightPanel.add(deleteButton);
+        buttonsPanel.add(leftPanel, BorderLayout.WEST);
+        buttonsPanel.add(rightPanel, BorderLayout.EAST);
+        add(buttonsPanel, BorderLayout.SOUTH);
 
-        // PASO 7: conecta botonVotar con otro addActionListener.
-        // a) Guarda table.getSelectedRow() en una variable int llamada fila.
-        // b) Si fila vale -1, no hay selección: muestra un aviso con
-        //    JOptionPane.showMessageDialog(this, "Selecciona un jugador");
-        //    Después sal del listener con return.
-        // c) Obtén el jugador seleccionado con players.get(fila).
-        //    La primera fila y el primer elemento de la lista tienen índice 0.
-        // d) Llama al método sumarVoto() de ese jugador.
-        // e) Actualiza sus votos con model.setValueAt(jugador.getVotos(), fila, 2).
-        //    Usa jugador como nombre de la variable del apartado c).
-        //    La columna Votos tiene índice 2 porque las columnas empiezan en 0.
+        addButton.addActionListener(e -> {
+            // if we cancel or leave a field empty, we stop adding the player
+            String nombre = JOptionPane.showInputDialog(this, "Nombre del jugador:");
+            if (nombre == null || nombre.trim().isEmpty()) {
+                return;
+            }
+            String equipo = JOptionPane.showInputDialog(this, "Equipo del jugador:");
+            if (equipo == null || equipo.trim().isEmpty()) {
+                return;
+            }
+            String pais = JOptionPane.showInputDialog(this, "País del jugador:");
+            if (pais == null || pais.trim().isEmpty()) {
+                return;
+            }
 
-        // PASO 8: comprobación final.
-        // Añade dos jugadores, selecciona uno y pulsa Votar varias veces.
-        // Comprueba que solo aumentan sus votos. Prueba también a cancelar
-        // al añadir y a votar sin seleccionar ninguna fila.
-        // Al cerrar el programa se pierden los datos: en este ejercicio es normal.
+            // trim removes spaces at the start and end, then we add the player to the list and table
+            Player jugador = new Player(nombre.trim(), equipo.trim(), pais.trim());
+            players.add(jugador);
+            model.addRow(new Object[] {players.size(), jugador.getNombre(), jugador.getEquipo(),
+                    jugador.getPais(), jugador.getVotos()});
+        });
+
+        sortButton.addActionListener(e -> {
+            // finishes editing the cell before moving the rows around
+            if (table.isEditing()) {
+                table.getCellEditor().stopCellEditing();
+            }
+            players.sort((p1, p2) -> Integer.compare(p2.getVotos(), p1.getVotos())); // compares two players, highest votes first
+            model.setRowCount(0); // clears the table rows, the players are still in the list
+            // fills the table again using the new order
+            for (int i = 0; i < players.size(); i++) {
+                Player jugador = players.get(i);
+                model.addRow(new Object[] {i + 1, jugador.getNombre(), jugador.getEquipo(),
+                        jugador.getPais(), jugador.getVotos()});
+            }
+        });
+
+        deleteButton.addActionListener(e -> {
+            if (table.isEditing()) {
+                table.getCellEditor().stopCellEditing();
+            }
+            int row = table.getSelectedRow();
+            if (row == -1) { // -1 means no row is selected
+                JOptionPane.showMessageDialog(this, "Selecciona un jugador");
+                return;
+            }
+            // removes the selected player from both places
+            players.remove(row);
+            model.removeRow(row);
+            // fixes the position numbers so there are no gaps after deleting
+            for (int i = 0; i < players.size(); i++) {
+                model.setValueAt(i + 1, i, 0);
+            }
+        });
     }
 
     public static void main(String[] args) {
+        // opens the window on the thread swing uses for the interface
         SwingUtilities.invokeLater(() -> {
             BalonOroMini ventana = new BalonOroMini();
             ventana.setVisible(true);
         });
     }
-
-    // dos botones a la izquierda y uno a la derecha, hay que usar un layout con
-    // dos layout dentro, uno a cada lado y en sentido contrario, uno va de
-    // izquierda a derecha y otro de derecha a izquierda
 }
